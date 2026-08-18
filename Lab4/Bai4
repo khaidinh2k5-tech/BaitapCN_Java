@@ -1,0 +1,108 @@
+package vn.edu.eaut.lab4;
+
+import javax.swing.*;
+import java.awt.*;
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
+
+public class FibonacciMemoFrame extends JFrame {
+
+    // Khai báo các thành phần giao diện
+    private JTextField txtN;
+    private JButton btnFind;
+    private JLabel lblResult;
+    private JProgressBar progressBar;
+
+    public FibonacciMemoFrame() {
+        // 1. Thiết lập cửa sổ
+        setTitle("Bài 4 - Tìm số Fibonacci thứ N");
+        setSize(500, 200);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null); // Căn giữa màn hình
+        
+        setLayout(new FlowLayout(FlowLayout.CENTER, 10, 15));
+
+        // 2. Khởi tạo các thành phần
+        txtN = new JTextField(15);
+        btnFind = new JButton("Tìm");
+        
+        progressBar = new JProgressBar();
+        progressBar.setPreferredSize(new Dimension(450, 25));
+        
+        lblResult = new JLabel("Kết quả: ");
+        lblResult.setFont(new Font("Arial", Font.BOLD, 14));
+
+        // 3. Thêm vào cửa sổ
+        add(new JLabel("Nhập số N:"));
+        add(txtN);
+        add(btnFind);
+        add(progressBar);
+        add(lblResult);
+
+        // 4. Bắt sự kiện nút bấm
+        btnFind.addActionListener(e -> findFibonacci());
+    }
+
+    // Thuật toán đệ quy tính Fibonacci kết hợp bộ nhớ đệm (Memoization)
+    private BigInteger fibonacci(int n, Map<Integer, BigInteger> memo) {
+        if (n <= 1) {
+            return BigInteger.valueOf(n);
+        }
+        if (memo.containsKey(n)) {
+            return memo.get(n);
+        }
+        BigInteger value = fibonacci(n - 1, memo).add(fibonacci(n - 2, memo));
+        memo.put(n, value);
+        return value;
+    }
+
+    // Hàm xử lý SwingWorker để không làm treo giao diện
+    private void findFibonacci() {
+        int n;
+        try {
+            n = Integer.parseInt(txtN.getText().trim());
+            if (n < 0) {
+                JOptionPane.showMessageDialog(this, "N phải >= 0");
+                return;
+            }
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập số nguyên hợp lệ");
+            return;
+        }
+        
+        btnFind.setEnabled(false);
+        progressBar.setIndeterminate(true); // Hiệu ứng thanh cuộn chạy qua lại liên tục
+        lblResult.setText("Đang tính Fibonacci...");
+        
+        SwingWorker<BigInteger, Void> worker = new SwingWorker<>() {
+            @Override
+            protected BigInteger doInBackground() {
+                // Đã xóa phần chữ rác ở đây
+                Map<Integer, BigInteger> memo = new HashMap<>();
+                return fibonacci(n, memo);
+            }
+            
+            @Override
+            protected void done() {
+                try {
+                    BigInteger result = get(); // Lấy kết quả từ doInBackground
+                    lblResult.setText("Fibonacci(" + n + ") = " + result);
+                } catch (Exception ex) {
+                    lblResult.setText("Có lỗi khi tính Fibonacci");
+                }
+                progressBar.setIndeterminate(false); // Tắt hiệu ứng chạy liên tục
+                progressBar.setValue(100); // Kéo đầy thanh màu báo hiệu xong
+                btnFind.setEnabled(true);
+            }
+        };
+        worker.execute();
+    }
+
+    // Hàm main để chạy thử
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            new FibonacciMemoFrame().setVisible(true);
+        });
+    }
+}
